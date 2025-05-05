@@ -2,41 +2,68 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>חשבונית</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>יצירת חשבונית</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Alef&display=swap');
     body {
-      font-family: "Arial", sans-serif;
-      background: #f7f7f7;
-      padding: 30px;
+      font-family: 'Alef', sans-serif;
+      background: #f2f2f2;
+      padding: 40px;
+      direction: rtl;
     }
-    .container {
+    .form, .invoice {
       max-width: 800px;
       margin: auto;
       background: white;
+      color: black;
       padding: 30px;
-      border-radius: 12px;
+      border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      color: #ff3c82;
+      margin-bottom: 30px;
     }
     label {
+      margin-top: 10px;
       display: block;
-      margin: 15px 0 5px;
+      font-weight: bold;
     }
-    input, textarea, select {
+    input, textarea {
       width: 100%;
       padding: 8px;
+      margin-top: 4px;
+      margin-bottom: 12px;
       border: 1px solid #ccc;
       border-radius: 5px;
     }
-    .row {
-      display: flex;
-      gap: 20px;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
     }
-    .row > div {
-      flex: 1;
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: right;
+    }
+    th {
+      background-color: #f7f7f7;
+    }
+    .footer {
+      font-size: 12px;
+      color: #666;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+      text-align: center;
+      margin-top: 30px;
+    }
+    button {
+      background-color: #ff3c82;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
     }
     .payment-buttons button {
       margin: 5px;
@@ -64,17 +91,20 @@
 </head>
 <body>
 
-<div class="container">
-  <h1>חשבונית חדשה</h1>
-
-  <label>תאריך מסמך</label>
-  <input type="date" id="date">
+<div class="form">
+  <h2>טופס הזנת חשבונית</h2>
 
   <label>שם הלקוח</label>
-  <input type="text" id="customer">
+  <input type="text" id="clientName">
+
+  <label>תאריך</label>
+  <input type="date" id="invoiceDate">
+
+  <label>מספר קבלה</label>
+  <input type="text" id="invoiceNumber">
 
   <label>תיאור</label>
-  <textarea id="description" rows="2"></textarea>
+  <textarea id="description"></textarea>
 
   <label>שיטת תשלום</label>
   <div class="payment-buttons">
@@ -85,54 +115,160 @@
   </div>
   <input type="hidden" id="paymentMethod">
 
-  <label>אחוז ניקוי מס במקור</label>
-  <input type="number" id="taxPercent" min="0" max="100">
 
-  <label>תגיות</label>
-  <input type="text" id="tags" placeholder="לדוג׳: אירוע, לקוח קבוע">
+  <label>סכום</label>
+  <input type="number" id="amount" step="0.01">
 
-  <label>הערות</label>
-  <textarea id="notes" rows="2"></textarea>
-
-  <button id="generate">הפק PDF</button>
+  <button onclick="generateInvoice()">צור חשבונית</button>
 </div>
 
+<!-- החשבונית תיווצר כאן -->
+<div class="invoice" id="invoice" style="display:none;">
+  <div style="text-align: center;">
+    <h2>רוי אסרף</h2>
+    <div>טל. 054-7351024</div>
+    <div>פקיעין חדשה 81, פקיעין חדשה 2519000</div>
+    <div><strong>עוסק פטור: 302211958</strong></div>
+  </div>
+
+  <div style="margin-top: 30px;">
+    <div><strong>לכבוד:</strong> <span id="outClientName"></span></div>
+    <div><strong>תאריך:</strong> <span id="outDate"></span></div>
+    <div><strong>מספר קבלה:</strong> <span id="outInvoiceNumber"></span></div>
+    <div><strong>מסמך ממוחשב, חתום דיגיטלית</strong></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>אמצעי תשלום</th>
+        <th>פירוט</th>
+        <th>תאריך</th>
+        <th>סכום</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td id="outPaymentMethod"></td>
+        <td id="outDescription"></td>
+        <td id="outDate2"></td>
+        <td id="outAmount"></td>
+      </tr>
+      <tr>
+        <td colspan="3" style="font-weight: bold;">סה"כ</td>
+        <td style="font-weight: bold;" id="outTotal"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    מסמך זה הופק ונחתם דיגיטלית על ידי <br>
+    חשבונית בצ'יק
+  </div>
+</div>
+
+<div style="text-align: center;">
+  <button id="downloadBtn" style="display:none;">הורד כ-PDF</button>
+</div>
+
+<script>
+  function generateInvoice() {
+    const client = document.getElementById("clientName").value;
+    const date = document.getElementById("invoiceDate").value;
+    const num = document.getElementById("invoiceNumber").value;
+    const desc = document.getElementById("description").value;
+    const payment = document.getElementById("paymentMethod").value;
+    const amount = parseFloat(document.getElementById("amount").value).toFixed(2);
+
+    if (!client || !date || !num || !desc || !payment || isNaN(amount)) {
+      alert("אנא מלא את כל השדות!");
+      return;
+    }
+
+    document.getElementById("outClientName").innerText = client;
+    document.getElementById("outDate").innerText = date;
+    document.getElementById("outDate2").innerText = date;
+    document.getElementById("outInvoiceNumber").innerText = num;
+    document.getElementById("outDescription").innerText = desc;
+    document.getElementById("outPaymentMethod").innerText = payment;
+    document.getElementById("outAmount").innerText = `₪${amount}`;
+    document.getElementById("outTotal").innerText = `₪${amount}`;
+
+    const invoiceDiv = document.getElementById("invoice");
+    invoiceDiv.style.display = "block";
+
+    // הראה את כפתור ההורדה
+    document.getElementById("downloadBtn").style.display = "inline-block";
+  }
+
+  document.getElementById("downloadBtn").addEventListener("click", () => {
+  const invoiceElement = document.getElementById("invoice");
+
+  // ודא שהאלמנט מוצג
+  invoiceElement.style.display = "block";
+
+  // המתן 500 מילישניות ואז צור PDF
+  setTimeout(() => {
+    const opt = {
+      margin: 0.5,
+      filename: 'invoice.pdf',
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(invoiceElement).save();
+  }, 500); // המתנה חיונית לרינדור
+});
+
+</script>
 <script>
   function selectPayment(method) {
     document.getElementById("paymentMethod").value = method;
     alert("שיטת תשלום נבחרה: " + method);
   }
+</script>
 
-  document.getElementById("generate").addEventListener("click", async () => {
-    const {
-      jsPDF
-    } = window.jspdf;
-    const doc = new jsPDF({ orientation: "portrait" });
+<input type="file" id="imgInput" accept="image/*">
+<button onclick="convertImageToPDF()">המר תמונה ל-PDF</button>
 
-    const date = document.getElementById("date").value;
-    const customer = document.getElementById("customer").value;
-    const description = document.getElementById("description").value;
-    const payment = document.getElementById("paymentMethod").value;
-    const tax = document.getElementById("taxPercent").value;
-    const tags = document.getElementById("tags").value;
-    const notes = document.getElementById("notes").value;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  async function convertImageToPDF() {
+    const input = document.getElementById("imgInput");
+    if (!input.files.length) {
+      alert("בחר תמונה קודם");
+      return;
+    }
 
-    doc.setFont("helvetica");
-    doc.setFontSize(16);
-    doc.text("חשבונית", 105, 20, null, null, "center");
+    const file = input.files[0];
+    const reader = new FileReader();
 
-    doc.setFontSize(12);
-    doc.text(`תאריך מסמך: ${date}`, 20, 40);
-    doc.text(`לקוח: ${customer}`, 20, 50);
-    doc.text(`תיאור: ${description}`, 20, 60);
-    doc.text(`שיטת תשלום: ${payment}`, 20, 70);
-    doc.text(`ניכוי מס במקור: ${tax}%`, 20, 80);
-    doc.text(`תגיות: ${tags}`, 20, 90);
-    doc.text("הערות:", 20, 100);
-    doc.text(notes, 20, 110);
+    reader.onload = async function(event) {
+      const imgData = event.target.result;
 
-    doc.save("invoice.pdf");
-  });
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+
+      // ניצור אובייקט תמונה כדי לחשב גודל יחסית לעמוד
+      const img = new Image();
+      img.src = imgData;
+
+      img.onload = function() {
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        const ratio = Math.min(pageWidth / img.width, pageHeight / img.height);
+        const width = img.width * ratio;
+        const height = img.height * ratio;
+
+        pdf.addImage(img, 'PNG', (pageWidth - width)/2, 20, width, height);
+        pdf.save('invoice_from_image.pdf');
+      };
+    };
+
+    reader.readAsDataURL(file);
+  }
 </script>
 
 </body>
