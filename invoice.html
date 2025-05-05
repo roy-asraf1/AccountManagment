@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>חשבונית</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      direction: rtl;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+    }
+    .invoice {
+      margin-top: 30px;
+      border: 1px solid #ccc;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    .invoice h2 {
+      margin-top: 0;
+    }
+    .footer {
+      margin-top: 20px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+      font-size: 0.9em;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>יצירת חשבונית</h1>
+
+  <form id="invoiceForm">
+    <label>תאריך מסמך:
+      <input type="date" id="date">
+    </label>
+
+    <label>שם הלקוח:
+      <input type="text" id="customerName">
+    </label>
+
+    <label>תיאור:
+      <textarea id="description" rows="3"></textarea>
+    </label>
+
+    <label>שיטת תשלום:
+      <select id="paymentMethod">
+        <option>מזומן</option>
+        <option>כרטיס אשראי</option>
+        <option>העברה בנקאית</option>
+        <option>אחר</option>
+      </select>
+    </label>
+
+    <label>אחוז ניקוי מס במקור:
+      <input type="number" id="taxPercent" min="0" max="100">%
+    </label>
+
+    <label>הערות:
+      <textarea id="notes" rows="2"></textarea>
+    </label>
+
+    <label>תגיות:
+      <input type="text" id="tags" placeholder="הפרד עם פסיק ,">
+    </label>
+
+    <button type="button" onclick="generateInvoice()">צור חשבונית</button>
+  </form>
+
+  <div class="invoice" id="invoice" style="display:none;">
+    <h2>חשבונית</h2>
+    <p><strong>תאריך:</strong> <span id="outDate"></span></p>
+    <p><strong>שם הלקוח:</strong> <span id="outCustomer"></span></p>
+    <p><strong>תיאור:</strong> <span id="outDescription"></span></p>
+    <p><strong>שיטת תשלום:</strong> <span id="outPayment"></span></p>
+    <p><strong>אחוז ניקוי מס:</strong> <span id="outTax"></span>%</p>
+    <p><strong>תגיות:</strong> <span id="outTags"></span></p>
+    <div class="footer">
+      <strong>הערות:</strong>
+      <p id="outNotes"></p>
+    </div>
+  </div>
+
+  <script>
+    function generateInvoice() {
+      document.getElementById('outDate').innerText = document.getElementById('date').value;
+      document.getElementById('outCustomer').innerText = document.getElementById('customerName').value;
+      document.getElementById('outDescription').innerText = document.getElementById('description').value;
+      document.getElementById('outPayment').innerText = document.getElementById('paymentMethod').value;
+      document.getElementById('outTax').innerText = document.getElementById('taxPercent').value;
+      document.getElementById('outNotes').innerText = document.getElementById('notes').value;
+      document.getElementById('outTags').innerText = document.getElementById('tags').value;
+      document.getElementById('invoice').style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>
