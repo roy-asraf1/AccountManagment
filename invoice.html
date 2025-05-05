@@ -3,110 +3,137 @@
 <head>
   <meta charset="UTF-8">
   <title>חשבונית</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      direction: rtl;
+      font-family: "Arial", sans-serif;
+      background: #f7f7f7;
+      padding: 30px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #ff3c82;
     }
     label {
       display: block;
-      margin-top: 10px;
+      margin: 15px 0 5px;
     }
-    input, select, textarea {
+    input, textarea, select {
       width: 100%;
-      padding: 6px;
-      margin-top: 4px;
-    }
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
-    }
-    .invoice {
-      margin-top: 30px;
+      padding: 8px;
       border: 1px solid #ccc;
-      padding: 20px;
-      background: #f9f9f9;
+      border-radius: 5px;
     }
-    .invoice h2 {
-      margin-top: 0;
+    .row {
+      display: flex;
+      gap: 20px;
     }
-    .footer {
+    .row > div {
+      flex: 1;
+    }
+    .payment-buttons button {
+      margin: 5px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
+    .credit { background: #00c897; }
+    .debit { background: #fcb900; }
+    .cash { background: #00bcd4; }
+    .other { background: #7e57c2; }
+    #generate {
+      background: #ff3c82;
+      color: white;
       margin-top: 20px;
-      border-top: 1px solid #ccc;
-      padding-top: 10px;
-      font-size: 0.9em;
-      color: #555;
+      padding: 10px 25px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
-  <h1>יצירת חשבונית</h1>
+<div class="container">
+  <h1>חשבונית חדשה</h1>
 
-  <form id="invoiceForm">
-    <label>תאריך מסמך:
-      <input type="date" id="date">
-    </label>
+  <label>תאריך מסמך</label>
+  <input type="date" id="date">
 
-    <label>שם הלקוח:
-      <input type="text" id="customerName">
-    </label>
+  <label>שם הלקוח</label>
+  <input type="text" id="customer">
 
-    <label>תיאור:
-      <textarea id="description" rows="3"></textarea>
-    </label>
+  <label>תיאור</label>
+  <textarea id="description" rows="2"></textarea>
 
-    <label>שיטת תשלום:
-      <select id="paymentMethod">
-        <option>מזומן</option>
-        <option>כרטיס אשראי</option>
-        <option>העברה בנקאית</option>
-        <option>אחר</option>
-      </select>
-    </label>
-
-    <label>אחוז ניקוי מס במקור:
-      <input type="number" id="taxPercent" min="0" max="100">%
-    </label>
-
-    <label>הערות:
-      <textarea id="notes" rows="2"></textarea>
-    </label>
-
-    <label>תגיות:
-      <input type="text" id="tags" placeholder="הפרד עם פסיק ,">
-    </label>
-
-    <button type="button" onclick="generateInvoice()">צור חשבונית</button>
-  </form>
-
-  <div class="invoice" id="invoice" style="display:none;">
-    <h2>חשבונית</h2>
-    <p><strong>תאריך:</strong> <span id="outDate"></span></p>
-    <p><strong>שם הלקוח:</strong> <span id="outCustomer"></span></p>
-    <p><strong>תיאור:</strong> <span id="outDescription"></span></p>
-    <p><strong>שיטת תשלום:</strong> <span id="outPayment"></span></p>
-    <p><strong>אחוז ניקוי מס:</strong> <span id="outTax"></span>%</p>
-    <p><strong>תגיות:</strong> <span id="outTags"></span></p>
-    <div class="footer">
-      <strong>הערות:</strong>
-      <p id="outNotes"></p>
-    </div>
+  <label>שיטת תשלום</label>
+  <div class="payment-buttons">
+    <button type="button" class="credit" onclick="selectPayment('כרטיס אשראי')">כרטיס אשראי</button>
+    <button type="button" class="debit" onclick="selectPayment('העברה בנקאית')">העברה בנקאית</button>
+    <button type="button" class="cash" onclick="selectPayment('מזומן')">מזומן</button>
+    <button type="button" class="other" onclick="selectPayment('אחר')">אחר</button>
   </div>
+  <input type="hidden" id="paymentMethod">
 
-  <script>
-    function generateInvoice() {
-      document.getElementById('outDate').innerText = document.getElementById('date').value;
-      document.getElementById('outCustomer').innerText = document.getElementById('customerName').value;
-      document.getElementById('outDescription').innerText = document.getElementById('description').value;
-      document.getElementById('outPayment').innerText = document.getElementById('paymentMethod').value;
-      document.getElementById('outTax').innerText = document.getElementById('taxPercent').value;
-      document.getElementById('outNotes').innerText = document.getElementById('notes').value;
-      document.getElementById('outTags').innerText = document.getElementById('tags').value;
-      document.getElementById('invoice').style.display = 'block';
-    }
-  </script>
+  <label>אחוז ניקוי מס במקור</label>
+  <input type="number" id="taxPercent" min="0" max="100">
+
+  <label>תגיות</label>
+  <input type="text" id="tags" placeholder="לדוג׳: אירוע, לקוח קבוע">
+
+  <label>הערות</label>
+  <textarea id="notes" rows="2"></textarea>
+
+  <button id="generate">הפק PDF</button>
+</div>
+
+<script>
+  function selectPayment(method) {
+    document.getElementById("paymentMethod").value = method;
+    alert("שיטת תשלום נבחרה: " + method);
+  }
+
+  document.getElementById("generate").addEventListener("click", async () => {
+    const {
+      jsPDF
+    } = window.jspdf;
+    const doc = new jsPDF({ orientation: "portrait" });
+
+    const date = document.getElementById("date").value;
+    const customer = document.getElementById("customer").value;
+    const description = document.getElementById("description").value;
+    const payment = document.getElementById("paymentMethod").value;
+    const tax = document.getElementById("taxPercent").value;
+    const tags = document.getElementById("tags").value;
+    const notes = document.getElementById("notes").value;
+
+    doc.setFont("helvetica");
+    doc.setFontSize(16);
+    doc.text("חשבונית", 105, 20, null, null, "center");
+
+    doc.setFontSize(12);
+    doc.text(`תאריך מסמך: ${date}`, 20, 40);
+    doc.text(`לקוח: ${customer}`, 20, 50);
+    doc.text(`תיאור: ${description}`, 20, 60);
+    doc.text(`שיטת תשלום: ${payment}`, 20, 70);
+    doc.text(`ניכוי מס במקור: ${tax}%`, 20, 80);
+    doc.text(`תגיות: ${tags}`, 20, 90);
+    doc.text("הערות:", 20, 100);
+    doc.text(notes, 20, 110);
+
+    doc.save("invoice.pdf");
+  });
+</script>
 
 </body>
 </html>
